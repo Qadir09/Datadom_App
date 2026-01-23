@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "692204602881",
+    "project_id": "datadomtt",
+    "storage_bucket": "datadomtt.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:692204602881:android:c7e6e1477ad5f95adea200",
+        "android_client_info": {
+          "package_name": "com.example.datadom"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjLoIAnUMk9tSS1gqeJWSvdudbWnNeGGc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
