@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Createserveypage extends StatelessWidget {
   const Createserveypage({Key? key}) : super(key: key);
@@ -77,16 +79,28 @@ class _QuestionListState extends State<QuestionList> {
               backgroundColor: Colors.green,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            onPressed: () {
-              // Handle submit action
-              print('Survey Title: ${surveyTitleController.text}');
-              for (var question in questions) {
-                print('Question ${question.number}: ${question.text}');
-                print('Type: ${question.type}');
-                if (question.options.isNotEmpty) {
-                  print('Options: ${question.options}');
-                }
-              }
+            onPressed: () async {
+              final user = FirebaseAuth.instance.currentUser;
+              if (user == null) return;
+
+              await FirebaseFirestore.instance.collection('surveys').add({
+                'surveyTitle': surveyTitleController.text,
+                'userId': user.uid,
+                'userEmail': user.email,
+                'createdAt': Timestamp.now(),
+                'questions': questions
+                    .map((q) => {
+                          'number': q.number,
+                          'text': q.text,
+                          'type': q.type,
+                          'options': q.options,
+                        })
+                    .toList(),
+              });
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Survey submitted')),
+              );
             },
             child: const Text('Submit'),
           ),
