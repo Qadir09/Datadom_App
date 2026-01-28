@@ -234,7 +234,7 @@ class _QuestionCardState extends State<QuestionCard> {
               children: [
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: Colors.blueGrey,
                   ),
                   onPressed: widget.onAdd,
                   child: const Text(
@@ -244,7 +244,7 @@ class _QuestionCardState extends State<QuestionCard> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: Colors.blueGrey,
                   ),
                   onPressed: widget.onRemove,
                   child: const Text('Remove',
