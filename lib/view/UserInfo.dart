@@ -1,34 +1,26 @@
+import 'package:datadom/view/AdminservyDetail.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+//import 'admin_view_surveys.dart'; // <-- contains AdminSurveyDetails
 
 class AllUsers extends StatelessWidget {
   const AllUsers({super.key});
 
-  Future<List<Map<String, dynamic>>> _fetchAllUsers() async {
-    try {
-      final userSnapshot =
-          await FirebaseFirestore.instance.collection('user_detail').get();
-      return userSnapshot.docs
-          .map((doc) => {'id': doc.id, ...doc.data()})
-          .toList();
-    } catch (e) {
-      throw Exception("Failed to fetch users: $e");
-    }
+  // ---------------- Fetch All Users ----------------
+  Future<List<QueryDocumentSnapshot>> _fetchAllUsers() async {
+    final snapshot =
+        await FirebaseFirestore.instance.collection('user_detail').get();
+    return snapshot.docs;
   }
 
-  Future<List<Map<String, dynamic>>> _fetchUserSurveys(String userId) async {
-    try {
-      final surveySnapshot = await FirebaseFirestore.instance
-          .collection('surveys')
-          .where('userId', isEqualTo: userId)
-          .get();
+  // ---------------- Fetch Surveys Of Specific User ----------------
+  Future<List<QueryDocumentSnapshot>> _fetchUserSurveys(String userId) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('surveys')
+        .where('userId', isEqualTo: userId)
+        .get();
 
-      return surveySnapshot.docs
-          .map((doc) => {'id': doc.id, ...doc.data()})
-          .toList();
-    } catch (e) {
-      throw Exception("Failed to fetch surveys: $e");
-    }
+    return snapshot.docs;
   }
 
   @override
@@ -37,90 +29,106 @@ class AllUsers extends StatelessWidget {
       appBar: AppBar(
         title: const Text('All Users'),
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
+      body: FutureBuilder<List<QueryDocumentSnapshot>>(
         future: _fetchAllUsers(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
+          }
+
+          if (snapshot.hasError) {
             return Center(
               child: Text(
                 "Error: ${snapshot.error}",
                 style: const TextStyle(color: Colors.red),
               ),
             );
-          } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-            final users = snapshot.data!;
-            return ListView.builder(
-              itemCount: users.length,
-              itemBuilder: (context, index) {
-                final user = users[index];
-                return Card(
-                  margin: const EdgeInsets.all(8.0),
-                  child: ExpansionTile(
-                    title: Text(
-                      "${user['firstName']} ${user['lastName']}",
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text("Email: ${user['email']}"),
-                    children: [
-                      FutureBuilder<List<Map<String, dynamic>>>(
-                        future: _fetchUserSurveys(user['id']),
-                        builder: (context, surveySnapshot) {
-                          if (surveySnapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: CircularProgressIndicator(),
-                            );
-                          } else if (surveySnapshot.hasError) {
-                            return Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                "Error loading surveys",
-                                style: const TextStyle(color: Colors.red),
-                              ),
-                            );
-                          } else if (surveySnapshot.hasData &&
-                              surveySnapshot.data!.isNotEmpty) {
-                            final surveys = surveySnapshot.data!;
-                            return ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: surveys.length,
-                              itemBuilder: (context, surveyIndex) {
-                                final survey = surveys[surveyIndex];
-                                return ListTile(
-                                  leading: const Icon(Icons.poll),
-                                  title: Text("Survey: ${survey['title']}"),
-                                  subtitle: Text(
-                                    "Description: ${survey['description'] ?? 'No description provided'}",
-                                  ),
-                                  trailing: Text(
-                                    "Created: ${survey['created_at']?.toDate().toString() ?? 'Unknown'}",
-                                    style: const TextStyle(fontSize: 12),
+          }
+
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("No users found"));
+          }
+
+          final users = snapshot.data!;
+
+          return ListView.builder(
+            itemCount: users.length,
+            itemBuilder: (context, index) {
+              final user = users[index];
+              final userId = user.id;
+
+              return Card(
+                margin: const EdgeInsets.all(8),
+                child: ExpansionTile(
+                  title: Text(
+                    "${user['firstName']} ${user['lastName']}",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text("Email: ${user['email']}"),
+                  children: [
+                    FutureBuilder<List<QueryDocumentSnapshot>>(
+                      future: _fetchUserSurveys(userId),
+                      builder: (context, surveySnapshot) {
+                        if (surveySnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+
+                        if (surveySnapshot.hasError) {
+                          return const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Text(
+                              "Error loading surveys",
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          );
+                        }
+
+                        if (!surveySnapshot.hasData ||
+                            surveySnapshot.data!.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Text("No surveys uploaded"),
+                          );
+                        }
+
+                        final surveys = surveySnapshot.data!;
+
+                        return ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: surveys.length,
+                          itemBuilder: (context, i) {
+                            final survey = surveys[i];
+
+                            return ListTile(
+                              leading: const Icon(Icons.poll),
+                              title: Text("Survey: ${survey['surveyTitle']}"),
+                              subtitle: Text("Tap to view full survey"),
+                              trailing:
+                                  const Icon(Icons.arrow_forward_ios, size: 16),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        AdminSurveyDetails(doc: survey),
                                   ),
                                 );
                               },
                             );
-                          } else {
-                            return const Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Text("No surveys uploaded"),
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
-          } else {
-            return const Center(
-              child: Text("No users found"),
-            );
-          }
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
         },
       ),
     );
